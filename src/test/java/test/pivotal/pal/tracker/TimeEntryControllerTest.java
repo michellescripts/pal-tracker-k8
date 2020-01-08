@@ -1,5 +1,8 @@
 package test.pivotal.pal.tracker;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.DistributionSummary;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.pivotal.pal.tracker.TimeEntry;
 import io.pivotal.pal.tracker.TimeEntryController;
 import io.pivotal.pal.tracker.TimeEntryRepository;
@@ -9,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 import static java.util.Arrays.asList;
@@ -19,12 +23,27 @@ import static org.mockito.Mockito.*;
 
 public class TimeEntryControllerTest {
     private TimeEntryRepository timeEntryRepository;
+    private DistributionSummary distributionSummary;
+    private Counter counter;
     private TimeEntryController controller;
 
     @BeforeEach
     public void setUp() {
         timeEntryRepository = mock(TimeEntryRepository.class);
-        controller = new TimeEntryController(timeEntryRepository);
+        distributionSummary = mock(DistributionSummary.class);
+        counter = mock(Counter.class);
+
+        MeterRegistry meterRegistry = mock(MeterRegistry.class);
+
+        doReturn(distributionSummary)
+            .when(meterRegistry)
+            .summary("timeEntry.summary");
+
+        doReturn(counter)
+            .when(meterRegistry)
+            .counter("timeEntry.actionCounter");
+
+        controller = new TimeEntryController(timeEntryRepository, meterRegistry);
     }
 
     @Test
@@ -38,10 +57,15 @@ public class TimeEntryControllerTest {
         doReturn(expectedResult)
             .when(timeEntryRepository)
             .create(any(TimeEntry.class));
+        doReturn(new ArrayList<>(List.of(expectedResult)))
+            .when(timeEntryRepository)
+            .list();
 
         ResponseEntity response = controller.create(timeEntryToCreate);
 
         verify(timeEntryRepository).create(timeEntryToCreate);
+        verify(counter).increment();
+        verify(distributionSummary).record(1);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(response.getBody()).isEqualTo(expectedResult);
     }
@@ -59,6 +83,7 @@ public class TimeEntryControllerTest {
         ResponseEntity<TimeEntry> response = controller.read(timeEntryId);
 
         verify(timeEntryRepository).find(timeEntryId);
+        verify(counter).increment();
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isEqualTo(expected);
     }
@@ -71,6 +96,8 @@ public class TimeEntryControllerTest {
             .find(nonExistentTimeEntryId);
 
         ResponseEntity<TimeEntry> response = controller.read(nonExistentTimeEntryId);
+
+        verifyNoInteractions(counter);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
@@ -85,6 +112,7 @@ public class TimeEntryControllerTest {
         ResponseEntity<List<TimeEntry>> response = controller.list();
 
         verify(timeEntryRepository).list();
+        verify(counter).increment();
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isEqualTo(expected);
     }
@@ -102,6 +130,7 @@ public class TimeEntryControllerTest {
         ResponseEntity response = controller.update(timeEntryId, expected);
 
         verify(timeEntryRepository).update(timeEntryId, expected);
+        verify(counter).increment();
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isEqualTo(expected);
     }
@@ -114,14 +143,23 @@ public class TimeEntryControllerTest {
             .update(eq(nonExistentTimeEntryId), any(TimeEntry.class));
 
         ResponseEntity response = controller.update(nonExistentTimeEntryId, new TimeEntry());
+
+        verifyNoInteractions(counter);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
     @Test
     public void testDelete() {
         long timeEntryId = 1L;
+        doReturn(new ArrayList<>())
+            .when(timeEntryRepository)
+            .list();
+
         ResponseEntity response = controller.delete(timeEntryId);
+
         verify(timeEntryRepository).delete(timeEntryId);
+        verify(counter).increment();
+        verify(distributionSummary).record(0);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     }
 }
