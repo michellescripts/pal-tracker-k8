@@ -1,0 +1,8 @@
+bases:
+  - ../../base
+patchesStrategicMerge:
+  - configmap.yaml
+  - ingress.yaml
+namespace: development
+nameSuffix: -development
+
