@@ -6,8 +6,8 @@ on:
 
 env:
   DOCKER_HUB_USERNAME: mbergquist
-  GCP_PROJECT_NAME: pal-tracker
-  K8S_CLUSTER_NAME: pal-tracker
+  GCP_PROJECT_NAME: k8s-349803653-mbergquist-vmwar
+  K8S_CLUSTER_NAME: pal-for-devs-k8s
 
 jobs:
   build-pack-and-publish:
