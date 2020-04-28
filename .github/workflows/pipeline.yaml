@@ -1,0 +1,45 @@
+name: Pal Tracker Pipeline
+
+on:
+  push:
+    branches: [master]
+
+env:
+  DOCKER_HUB_USERNAME: mbergquist
+  GCP_PROJECT_NAME: pal-tracker
+  K8S_CLUSTER_NAME: pal-tracker
+
+jobs:
+  build-pack-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Set up JDK 11
+        uses: actions/setup-java@v1
+        with:
+          java-version: 11
+      - name: Build with Gradle
+        run: ./gradlew build
+      - run: sudo apt-get install docker
+      - run: docker login -u "${{env.DOCKER_HUB_USERNAME}}" -p "${{secrets.DOCKER_HUB_PASSWORD}}"
+      - run: wget https://github.com/buildpacks/pack/releases/download/v0.9.0/pack-v0.9.0-linux.tgz
+      - run: tar xvf pack-v0.9.0-linux.tgz
+      - run: rm pack-v0.9.0-linux.tgz
+      - run: ./pack build ${{env.DOCKER_HUB_USERNAME}}/pal-tracker:build-${{github.run_number}} --builder cloudfoundry/cnb:bionic --publish
+  deploy:
+    needs: build-pack-and-publish
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+      - run: curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
+      - run: sudo apt-get update && sudo apt-get install google-cloud-sdk
+      - run: echo '${{secrets.GCP_SERVICE_KEY}}' > google-key.json
+      - run: gcloud auth activate-service-account --key-file="google-key.json"
+      - run: gcloud container clusters get-credentials ${{env.K8S_CLUSTER_NAME}} --project ${{env.GCP_PROJECT_NAME}} --zone us-central1-c
+      - run: curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.15.10/bin/linux/amd64/kubectl
+      - run: chmod +x ./kubectl
+      - uses: actions/checkout@v1
+      - run: grep "github.run_number" k8s/environments/review/deployment.yaml
+      - run: sed -i 's/github.run_number/${{github.run_number}}/g' k8s/environments/review/deployment.yaml
+      - run: kubectl apply -k k8s/environments/review
+
