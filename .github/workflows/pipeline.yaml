@@ -19,13 +19,13 @@ jobs:
         with:
           java-version: 11
       - run: wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-           - run: sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" > /etc/apt/sources.list.d/PostgreSQL.list'
-           - run: sudo apt update
-           - run: sudo apt-get install postgresql-11
-           - run: sudo -u postgres psql -f databases/tracker/create_databases.sql -U postgres
-           - run: curl https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/6.3.1/flyway-commandline-6.3.1-linux-x64.tar.gz | tar xvz
-           - run: ./flyway-6.3.1/flyway -url="jdbc:postgresql://localhost:5432/tracker_test" -locations=filesystem:databases/tracker clean migrate -user=tracker -password='password'
-                     - name: Build with Gradle
+      - run: sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" > /etc/apt/sources.list.d/PostgreSQL.list'
+      - run: sudo apt update
+      - run: sudo apt-get install postgresql-11
+      - run: sudo -u postgres psql -f databases/tracker/create_databases.sql -U postgres
+      - run: curl https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/6.3.1/flyway-commandline-6.3.1-linux-x64.tar.gz | tar xvz
+      - run: ./flyway-6.3.1/flyway -url="jdbc:postgresql://localhost:5432/tracker_test" -locations=filesystem:databases/tracker clean migrate -user=tracker -password='password'
+      - name: Build with Gradle
       - run: ./gradlew build
       - run: sudo apt-get install docker
       - run: docker login -u "${{env.DOCKER_HUB_USERNAME}}" -p "${{secrets.DOCKER_HUB_PASSWORD}}"
