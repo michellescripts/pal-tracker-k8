@@ -18,6 +18,9 @@ spec:
       containers:
         - name: pal-tracker-container
           image: mbergquist/pal-tracker:v1
+          resources:
+            limits:
+              cpu: "100m"
           readinessProbe:
             httpGet:
                path: /
