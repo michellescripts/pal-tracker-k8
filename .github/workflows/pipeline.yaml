@@ -32,6 +32,7 @@ jobs:
       - run: wget https://github.com/buildpacks/pack/releases/download/v0.9.0/pack-v0.9.0-linux.tgz
       - run: tar xvf pack-v0.9.0-linux.tgz
       - run: rm pack-v0.9.0-linux.tgz
+      - run: rm -rf flyway-6.3.1
       - run: ./pack build ${{env.DOCKER_HUB_USERNAME}}/pal-tracker:build-${{github.run_number}} --builder cloudfoundry/cnb:bionic --publish
   deploy:
     needs: build-pack-and-publish
