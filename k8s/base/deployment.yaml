@@ -18,6 +18,9 @@ spec:
       containers:
         - name: pal-tracker-container
           image: mbergquist/pal-tracker:v1
+          envFrom:
+            - secretRef:
+                name: db-credentials
           resources:
             limits:
               cpu: "100m"
