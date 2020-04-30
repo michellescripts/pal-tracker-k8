@@ -21,12 +21,18 @@ test {
     useJUnitPlatform()
 }
 
+springBoot {
+    buildInfo()
+}
+
 bootRun.environment([
         "WELCOME_MESSAGE": "hello",
         "SPRING_DATASOURCE_URL": "jdbc:postgresql://localhost:5432/tracker_dev?user=tracker&password=password",
+        "MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE": "*",
 ])
 
 test.environment([
         "WELCOME_MESSAGE": "Hello from test",
         "SPRING_DATASOURCE_URL": "jdbc:postgresql://localhost:5432/tracker_test?user=tracker&password=password",
+        "MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE": "*",
 ])

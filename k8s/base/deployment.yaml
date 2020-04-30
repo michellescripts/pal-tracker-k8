@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: pal-tracker-container
-          image: mbergquist/pal-tracker:v1
+          image: mbergquist/pal-tracker:build-12
           envFrom:
             - secretRef:
                 name: db-credentials
@@ -38,3 +38,8 @@ spec:
               configMapKeyRef:
                 name: pal-tracker
                 key: welcome.message
+          - name: SPRING_DATASOURCE_HIKARI_MAXIMUMPOOLSIZE
+            valueFrom:
+              configMapKeyRef:
+                name: pal-tracker
+                key: spring.datasource.hikari.maximumpoolsize
